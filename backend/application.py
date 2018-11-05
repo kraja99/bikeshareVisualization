@@ -5,13 +5,13 @@ from flask import Flask, jsonify
 from flask_restful import Api, Resource, reqparse
 from flask_cors import CORS
 
-
 application = Flask(__name__)
 api = Api(application)
 CORS(application)
 connect_str = "dbname='{}' user='{}' host='{}' password='{}' port='{}'".format(os.environ['RDS_DB_NAME'], os.environ['RDS_USERNAME'], os.environ['RDS_HOSTNAME'], os.environ['RDS_PASSWORD'], int(os.environ['RDS_PORT']))
 conn = psycopg2.connect(connect_str)
 
+# queries Lat and Long given a station id
 class getLatLong(Resource):
     def get(self, station):
         conn = getConn()
@@ -27,7 +27,7 @@ class getLatLong(Resource):
         cursor.close()
         return result
 
-
+# gets list of all stations in db
 class getStations(Resource):
     def get(self):
         conn = getConn()
@@ -43,6 +43,7 @@ class getStations(Resource):
         cursor.close()
         return result
 
+# query season data as well as checkin checkout data
 class timeData(Resource):
     def get(self):
         conn = getConn()
@@ -59,6 +60,7 @@ class timeData(Resource):
         result['DurationBySeason'].append(cursor.fetchall()[0])
 
         result['PassholderCountBySeason'] = []
+        # Consolidated all passholder season counts into one query
         sql_command = """SELECT COUNT(*) FILTER (WHERE passholder_type = 'Monthly Pass' AND (date_part('month', start_time) = 3 OR date_part('month', start_time) = 4 OR date_part('month', start_time) = 5)) AS MonthlySpring,
             COUNT(*) FILTER (WHERE passholder_type = 'Monthly Pass' AND (date_part('month', start_time) = 6 OR date_part('month', start_time) = 7 OR date_part('month', start_time) = 8)) AS MonthlySummer,
             COUNT(*) FILTER (WHERE passholder_type = 'Monthly Pass' AND (date_part('month', start_time) = 9 OR date_part('month', start_time) = 10 OR date_part('month', start_time) = 11)) AS MonthlyFall,
@@ -81,7 +83,7 @@ class timeData(Resource):
 
         result['CheckoutCount'] = []
         result['CheckinCount'] = []
-        for i in range(24):
+        for i in range(24): # query counts of rides that were checked in/out during each hour
             sql_command = """SELECT Count(*) FROM trip WHERE start_time::time >= '{start_hr}:00:00' AND start_time::time < '{end_hr}:00:00';""".format(start_hr=i, end_hr=i+1)
             cursor.execute(sql_command)
             result['CheckoutCount'].append(cursor.fetchall()[0][0])
@@ -119,7 +121,6 @@ class initialData(Resource):
         sql_command = """SELECT start_station_id, end_station_id, count(*) as RouteCount FROM trip GROUP BY start_station_id, end_station_id Order by routecount DESC LIMIT 10;"""
         cursor.execute(sql_command)
         result['MostPopularRoutes'] = cursor.fetchall()
-
         sql_command = """SELECT start_station_id, end_station_id, count(*) as RouteCount FROM trip GROUP BY start_station_id, end_station_id Order by routecount DESC LIMIT 10;"""
         cursor.execute(sql_command)
         result['MostPopularRoutes'] = cursor.fetchall()
@@ -161,6 +162,7 @@ class initialData(Resource):
         cursor.close()
         return result
 
+# Try to reconnect to database if we lose connection
 def getConn():
     global conn
     if not conn or conn.closed:
@@ -168,6 +170,7 @@ def getConn():
         conn = psycopg2.connect(connect_str)
     return conn
 
+# API endpoints
 api.add_resource(getLatLong, '/getLatLong/<string:station>')
 api.add_resource(getStations, '/getStations')
 api.add_resource(timeData, '/timeData')

@@ -341,22 +341,22 @@ export default {
     };
   },
   created() {
-    axios.get(`${process.env.ROOT_API}/initialData`)
+    axios.get(`${process.env.ROOT_API}/initialData`)  //get data to populate charts
       .then((res) => {
         this.commute_count = res.data.RegularUsers;
         this.avg_one_way_distance = Math.round(res.data.AverageOneWayDistance * 100) / 100;
         this.avg_roundtrip_distance = Math.round(res.data.AverageRoundtripDistance * 100) / 100;
-        for (let i = 0; i < res.data.MostPopularStartStation.length; i += 1) {
+        for (let i = 0; i < res.data.MostPopularStartStation.length; i += 1) {  //populate most popular station data
           this.start_station_options.xaxis.categories.push(res.data.MostPopularStartStation[i][0]);
           this.start_station_series[0].data.push(res.data.MostPopularStartStation[i][1]);
           this.end_station_options.xaxis.categories.push(res.data.MostPopularEndStation[i][0]);
           this.end_station_series[0].data.push(res.data.MostPopularEndStation[i][1]);
         }
-        for (let i = 0; i < res.data.MostPopularRoutes.length; i += 1) {
+        for (let i = 0; i < res.data.MostPopularRoutes.length; i += 1) {  //populate most popular route data
           this.routes_series[0].data.push(res.data.MostPopularRoutes[i][2]);
           this.routes_options.xaxis.categories.push(`${res.data.MostPopularRoutes[i][0]}/${res.data.MostPopularRoutes[i][1]}`);
         }
-        for (let i = 0; i < res.data.Duration_Walkup.length; i += 1) {
+        for (let i = 0; i < res.data.Duration_Walkup.length; i += 1) { //populate ride duration chart data
           this.walkup_series.push(res.data.Duration_Walkup[i]);
           this.non_walkup_series.push(res.data.Duration_Non_Walkup[i]);
         }
@@ -367,7 +367,7 @@ export default {
       });
   },
   mounted() {
-    axios.get(`${process.env.ROOT_API}/getStations`)
+    axios.get(`${process.env.ROOT_API}/getStations`)  //get and store list of all stations
       .then((res) => {
         for (let i = 0; i < res.data.Stations.length; i += 1) {
           this.station_options.push(res.data.Stations[i]);
@@ -377,7 +377,7 @@ export default {
         // eslint-disable-next-line
         console.error(error);
       });
-    axios.get(`${process.env.ROOT_API}/timeData`)
+    axios.get(`${process.env.ROOT_API}/timeData`) //get check-in/checkout data and season data
       .then((res) => {
         this.checkin_options.xaxis.categories = [];
         for (let i = 0; i < res.data.CheckinCount.length; i += 1) {
@@ -426,10 +426,10 @@ export default {
       });
   },
   methods: {
-    updateMap(event) {
-      axios.get(`${process.env.ROOT_API}/getLatLong/${event}`)
+    updateMap(event) {  //update the map whenever the user selects a station
+      axios.get(`${process.env.ROOT_API}/getLatLong/${event}`)  //get the lat and long of the queried station
       .then((res) => {
-        this.$refs.mapRef.$mapPromise.then((map) => {
+        this.$refs.mapRef.$mapPromise.then((map) => { //update the maps marker and center
           map.panTo({ lat: res.data.LatLong[0], lng: res.data.LatLong[1] });
           this.markers[0].position.lat = res.data.LatLong[0];
           this.markers[0].position.lng = res.data.LatLong[1];
